@@ -8,6 +8,11 @@ import (
 	"os"
 	"reflect"
 	"testing"
+<<<<<<< HEAD
+=======
+	"time"
+	"unsafe"
+>>>>>>> 2a82be3 (netlink: enable usage of the network poller)
 
 	"golang.org/x/sys/unix"
 )
@@ -518,7 +523,11 @@ type testSocket struct {
 		recvflags int
 		from      unix.Sockaddr
 	}
-	setSockopt []setSockopt
+	// TODO(acln): use these next three fields in tests
+	deadline      time.Time
+	readDeadline  time.Time
+	writeDeadline time.Time
+	setSockopt    []setSockopt
 }
 
 type setSockopt struct {
@@ -538,6 +547,8 @@ func (s *testSocket) Close() error {
 }
 
 func (s *testSocket) FD() int { return 0 }
+
+func (s *testSocket) File() *os.File { return nil }
 
 func (s *testSocket) Getsockname() (unix.Sockaddr, error) {
 	if s.getsockname == nil {
@@ -563,12 +574,31 @@ func (s *testSocket) Sendmsg(p, oob []byte, to unix.Sockaddr, flags int) error {
 	return nil
 }
 
+<<<<<<< HEAD
 func (s *testSocket) SetSockoptInt(level, opt, value int) error {
 	// Value must be in range of a C integer.
 	if value < math.MinInt32 || value > math.MaxInt32 {
 		return unix.EINVAL
 	}
 
+=======
+func (s *testSocket) SetDeadline(t time.Time) error {
+	s.deadline = t
+	return nil
+}
+
+func (s *testSocket) SetReadDeadline(t time.Time) error {
+	s.readDeadline = t
+	return nil
+}
+
+func (s *testSocket) SetWriteDeadline(t time.Time) error {
+	s.writeDeadline = t
+	return nil
+}
+
+func (s *testSocket) SetSockopt(level, name int, v unsafe.Pointer, l uint32) error {
+>>>>>>> 2a82be3 (netlink: enable usage of the network poller)
 	s.setSockopt = append(s.setSockopt, setSockopt{
 		level: level,
 		opt:   opt,
