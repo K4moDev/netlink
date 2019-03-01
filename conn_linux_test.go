@@ -159,7 +159,7 @@ func TestLinuxConnReceive(t *testing.T) {
 			//  4 bytes: error code
 			// 20 bytes: request message
 			Length:   uint32(nlmsgAlign(nlmsgLength(24))),
-			Type:     HeaderTypeError,
+			Type:     Error,
 			Sequence: 1,
 			PID:      uint32(os.Getpid()),
 		},
@@ -221,7 +221,7 @@ func TestLinuxConnReceiveLargeMessage(t *testing.T) {
 	res := Message{
 		Header: Header{
 			Length:   uint32(nlmsgAlign(nlmsgLength(n))),
-			Type:     HeaderTypeError,
+			Type:     Error,
 			Sequence: 1,
 			PID:      uint32(os.Getpid()),
 		},
