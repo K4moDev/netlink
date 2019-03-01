@@ -62,7 +62,7 @@ func dial(family int, config *Config) (*conn, uint32, error) {
 
 	sock, err := newSysSocket(config)
 	if err != nil {
-		return nil, 0, os.NewSyscallError("netlink-sys-socket", err)
+		return nil, 0, err
 	}
 
 	if err := sock.Socket(family); err != nil {
@@ -595,6 +595,9 @@ type lockedNetNSGoroutine struct {
 }
 
 func newLockedNetNSGoroutine(netNS int) (*lockedNetNSGoroutine, error) {
+	// Any bare syscall errors (e.g. setns) should be wrapped with
+	// os.NewSyscallError for the remainder of this function.
+
 	g := &lockedNetNSGoroutine{
 		doneC: make(chan struct{}),
 		funcC: make(chan func()),
