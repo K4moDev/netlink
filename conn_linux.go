@@ -547,13 +547,8 @@ func (s *sysSocket) Recvmsg(p, oob []byte, flags int) (int, int, int, unix.Socka
 	doErr := s.read(func(fd int) bool {
 		n, oobn, recvflags, from, err = unix.Recvmsg(fd, p, oob, flags)
 
-		// When the socket is in non-blocking mode, we might see
-		// EAGAIN and end up here. In that case, return false to
-		// let the poller wait for readiness. See the source code
-		// for internal/poll.FD.RawRead for more details.
-		//
-		// If the socket is in blocking mode, EAGAIN should never occur.
-		return err != syscall.EAGAIN
+		// Check for readiness.
+		return ready(err)
 	})
 	if doErr != nil {
 		return 0, 0, 0, nil, doErr
@@ -567,8 +562,8 @@ func (s *sysSocket) Sendmsg(p, oob []byte, to unix.Sockaddr, flags int) error {
 	doErr := s.write(func(fd int) bool {
 		err = unix.Sendmsg(fd, p, oob, to, flags)
 
-		// Analogous to Recvmsg. See the comments there.
-		return err != syscall.EAGAIN
+		// Check for readiness.
+		return ready(err)
 	})
 	if doErr != nil {
 		return doErr
@@ -623,6 +618,28 @@ func (s *sysSocket) SetSockopt(level, name int, v unsafe.Pointer, l uint32) erro
 	}
 
 	return err
+}
+
+// ready indicates readiness based on the value of err.
+func ready(err error) bool {
+	// When a socket is in non-blocking mode, we might see
+	// EAGAIN. In that case, return false to let the poller wait for readiness.
+	// See the source code for internal/poll.FD.RawRead for more details.
+	//
+	// Starting in Go 1.14, goroutines are asynchronously preemptible. The 1.14
+	// release notes indicate that applications should expect to see EINTR more
+	// often on slow system calls (like recvmsg while waiting for input), so
+	// we must handle that case as well.
+	//
+	// If the socket is in blocking mode, EAGAIN should never occur.
+	switch err {
+	case syscall.EAGAIN, syscall.EINTR:
+		// Not ready.
+		return false
+	default:
+		// Ready whether there was error or no error.
+		return true
+	}
 }
 
 // lockedNetNSGoroutine is a worker goroutine locked to an operating system
