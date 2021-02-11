@@ -135,9 +135,6 @@ func newConn(s *socket, config *Config) (*conn, uint32, error) {
 	}, sa.(*unix.SockaddrNetlink).Pid, nil
 }
 
-// saNetlink is the sockaddr used in sendmsg calls.
-var saNetlink = &unix.SockaddrNetlink{Family: unix.AF_NETLINK}
-
 // SendMessages serializes multiple Messages and sends them to netlink.
 func (c *conn) SendMessages(messages []Message) error {
 	var buf []byte
@@ -150,7 +147,8 @@ func (c *conn) SendMessages(messages []Message) error {
 		buf = append(buf, b...)
 	}
 
-	return os.NewSyscallError("sendmsg", c.s.Sendmsg(buf, nil, saNetlink, 0))
+	sa := &unix.SockaddrNetlink{Family: unix.AF_NETLINK}
+	return os.NewSyscallError("sendmsg", c.s.Sendmsg(buf, nil, sa, 0))
 }
 
 // Send sends a single Message to netlink.
@@ -160,7 +158,8 @@ func (c *conn) Send(m Message) error {
 		return err
 	}
 
-	return os.NewSyscallError("sendmsg", c.s.Sendmsg(b, nil, saNetlink, 0))
+	sa := &unix.SockaddrNetlink{Family: unix.AF_NETLINK}
+	return os.NewSyscallError("sendmsg", c.s.Sendmsg(b, nil, sa, 0))
 }
 
 // Receive receives one or more Messages from netlink.
