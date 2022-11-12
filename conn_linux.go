@@ -4,6 +4,7 @@
 package netlink
 
 import (
+	"context"
 	"os"
 	"syscall"
 	"time"
@@ -131,7 +132,8 @@ func (c *conn) SendMessages(messages []Message) error {
 	}
 
 	sa := &unix.SockaddrNetlink{Family: unix.AF_NETLINK}
-	return c.s.Sendmsg(buf, nil, sa, 0)
+	_, err := c.s.Sendmsg(context.Background(), buf, nil, sa, 0)
+	return err
 }
 
 // Send sends a single Message to netlink.
@@ -142,7 +144,8 @@ func (c *conn) Send(m Message) error {
 	}
 
 	sa := &unix.SockaddrNetlink{Family: unix.AF_NETLINK}
-	return c.s.Sendmsg(b, nil, sa, 0)
+	_, err = c.s.Sendmsg(context.Background(), b, nil, sa, 0)
+	return err
 }
 
 // Receive receives one or more Messages from netlink.
@@ -153,7 +156,7 @@ func (c *conn) Receive() ([]Message, error) {
 		//
 		// TODO(mdlayher): deal with OOB message data if available, such as
 		// when PacketInfo ConnOption is true.
-		n, _, _, _, err := c.s.Recvmsg(b, nil, unix.MSG_PEEK)
+		n, _, _, _, err := c.s.Recvmsg(context.Background(), b, nil, unix.MSG_PEEK)
 		if err != nil {
 			return nil, err
 		}
@@ -168,7 +171,7 @@ func (c *conn) Receive() ([]Message, error) {
 	}
 
 	// Read out all available messages
-	n, _, _, _, err := c.s.Recvmsg(b, nil, 0)
+	n, _, _, _, err := c.s.Recvmsg(context.Background(), b, nil, 0)
 	if err != nil {
 		return nil, err
 	}
